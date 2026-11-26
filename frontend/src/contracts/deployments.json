@@ -5,5 +5,13 @@
     "network": "localhost",
     "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "deployedAt": "2026-11-26T19:20:41.269Z"
+  },
+  "11155111": {
+    "address": "0x9Bb43D821EE6719E9846696A8ab8442110566aF8",
+    "block": 12218880,
+    "network": "sepolia",
+    "deployer": "0x86CB252501096e01f1060FB7332FBfb5a639153C",
+    "deployedAt": "2026-11-26T20:44:36Z",
+    "txHash": "0x6b29b5b531efbbe9d86013758b470d5c01c6a8c056e4b6020833c0473ea6a8d7"
   }
 }
