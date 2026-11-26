@@ -6,6 +6,13 @@ const net = require("net");
 const path = require("path");
 
 const root = __dirname;
+
+const major = Number(process.versions.node.split(".")[0]);
+if (major < 22) {
+  console.error(`This demo needs Node.js 22 or newer, but this computer has ${process.version}.`);
+  console.error("Install the LTS version from https://nodejs.org and try again.");
+  process.exit(1);
+}
 const children = [];
 
 function run(cmd, cwd, label) {

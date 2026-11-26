@@ -24,7 +24,7 @@ demo.js       One-command offline demo (local blockchain + web app)
 
 ## Run the demo on any laptop (offline)
 
-You need [Node.js 20 or newer](https://nodejs.org). Then run:
+You need [Node.js 22 or newer](https://nodejs.org) (download the **LTS** version). Then run:
 
 ```bash
 npm run setup     # first time only: installs everything
