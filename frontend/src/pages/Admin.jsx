@@ -14,7 +14,7 @@ import {
 } from "../lib/chain";
 import { CLASSES, buildCertificate, canonicalize, certificateLink, formatDate, hashCertificate, shareLink, shortHash } from "../lib/certificate";
 import { encryptText } from "../lib/crypto";
-import { getPinataJwt, pinataFromBuild, setPinataJwt, storageMode, uploadDocument } from "../lib/storage";
+import { extractJwt, getPinataJwt, pinataFromBuild, setPinataJwt, storageMode, testPinataJwt, uploadDocument } from "../lib/storage";
 import { clearPerfLog, downloadText, getPerfLog, logPerf, perfCsv } from "../lib/perf";
 import { AddressLink, CopyButton, Field, Hash, QR, Steps, TxLink, downloadQr } from "../components/ui";
 
@@ -628,6 +628,8 @@ function AuditPanel() {
 function SettingsPanel({ signer, roles, onRolesChanged }) {
   const [jwt, setJwt] = useState(getPinataJwt());
   const [saved, setSaved] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [test, setTest] = useState(null);
   const [newAdmin, setNewAdmin] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
@@ -665,7 +667,7 @@ function SettingsPanel({ signer, roles, onRolesChanged }) {
         ) : (
           <>
             <p className="small muted">
-              Paste a Pinata JWT (free at pinata.cloud) to pin documents to public IPFS. It is saved only in this
+              Paste the Pinata JWT (or everything Pinata&rsquo;s Copy All gave you; the app finds the JWT), then press Test key. It is saved only in this
               browser. On a borrowed computer, press Forget when you finish.
             </p>
             <Field label="Pinata JWT">
@@ -676,6 +678,7 @@ function SettingsPanel({ signer, roles, onRolesChanged }) {
                 className="btn small primary"
                 onClick={() => {
                   setPinataJwt(jwt);
+                  setJwt(extractJwt(jwt));
                   setSaved(true);
                   setTimeout(() => setSaved(false), 1500);
                 }}
@@ -683,15 +686,30 @@ function SettingsPanel({ signer, roles, onRolesChanged }) {
                 {saved ? "Saved ✓" : "Save"}
               </button>
               <button
+                className="btn small"
+                disabled={!jwt || testing}
+                onClick={async () => {
+                  setTesting(true);
+                  setPinataJwt(jwt);
+                  setJwt(extractJwt(jwt));
+                  setTest(await testPinataJwt(jwt));
+                  setTesting(false);
+                }}
+              >
+                {testing ? "Testing…" : "Test key"}
+              </button>
+              <button
                 className="btn small ghost"
                 onClick={() => {
                   setPinataJwt("");
                   setJwt("");
+                  setTest(null);
                 }}
               >
                 Forget
               </button>
             </div>
+            {test && <div className={`alert ${test.ok ? "success" : "error"}`}>{test.message}</div>}
           </>
         )}
 

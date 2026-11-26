@@ -13,9 +13,30 @@ export function getPinataJwt() {
   }
 }
 
+/** Finds the JWT inside whatever was pasted (e.g. the whole "Copy All" text from Pinata). */
+export function extractJwt(text) {
+  const m = (text || "").match(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/);
+  return m ? m[0] : (text || "").trim();
+}
+
+/** Checks the key with Pinata. Returns { ok, message }. */
+export async function testPinataJwt(jwt) {
+  try {
+    const r = await fetch("https://api.pinata.cloud/data/testAuthentication", {
+      headers: { Authorization: `Bearer ${extractJwt(jwt)}` },
+    });
+    if (r.ok) return { ok: true, message: "Pinata accepted the key ✓" };
+    if (r.status === 401 || r.status === 403)
+      return { ok: false, message: "Pinata rejected this key. Paste the JWT again (the long text starting with eyJ), or create a new key with Admin turned on." };
+    return { ok: false, message: `Pinata answered with an error (${r.status}). Try again in a minute.` };
+  } catch {
+    return { ok: false, message: "Could not reach Pinata. Check the internet connection." };
+  }
+}
+
 export function setPinataJwt(jwt) {
   try {
-    if (jwt) localStorage.setItem(LS_PINATA, jwt.trim());
+    if (jwt) localStorage.setItem(LS_PINATA, extractJwt(jwt));
     else localStorage.removeItem(LS_PINATA);
   } catch {
     /* ignore */
@@ -52,13 +73,26 @@ export async function uploadDocument(bytes, name) {
     form.append("file", new Blob([bytes], { type: "application/octet-stream" }), name);
     form.append("pinataMetadata", JSON.stringify({ name }));
     form.append("pinataOptions", JSON.stringify({ cidVersion: 1 }));
+    const jwt = extractJwt(getPinataJwt());
     const r = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
       method: "POST",
-      headers: { Authorization: `Bearer ${getPinataJwt()}` },
+      headers: { Authorization: `Bearer ${jwt}` },
       body: form,
     });
-    if (!r.ok) throw new Error(`IPFS upload failed (${r.status}). Check the Pinata key in Settings.`);
-    return (await r.json()).IpfsHash;
+    if (r.ok) return (await r.json()).IpfsHash;
+    // Keys without the legacy pinning permission can still use the newer v3 upload API.
+    if (r.status === 401 || r.status === 403) {
+      const f3 = new FormData();
+      f3.append("file", new Blob([bytes], { type: "application/octet-stream" }), name);
+      f3.append("network", "public");
+      const r3 = await fetch("https://uploads.pinata.cloud/v3/files", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${jwt}` },
+        body: f3,
+      });
+      if (r3.ok) return (await r3.json()).data.cid;
+    }
+    throw new Error(`IPFS upload failed (${r.status}). Open Settings, paste the Pinata JWT again and press Test key.`);
   }
   if (mode === "local") {
     const r = await fetch("local-ipfs/add", { method: "POST", body: bytes });
