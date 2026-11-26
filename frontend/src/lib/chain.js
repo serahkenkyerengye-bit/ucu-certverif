@@ -102,10 +102,19 @@ export async function loadHistory(minBlock) {
   // pass its block so the new event is always included.
   const latest = await getReadProvider().getBlockNumber();
   const to = Math.max(latest, minBlock || 0);
-  const [issued, revoked] = await Promise.all([
-    c.queryFilter(c.filters.CertificateIssued(), from, to),
-    c.queryFilter(c.filters.CertificateRevoked(), from, to),
-  ]);
+  // Public RPC nodes limit how many blocks one log query may cover, so read in chunks.
+  const STEP = CHAIN_ID === 31337 ? Number.MAX_SAFE_INTEGER : 40000;
+  const issued = [];
+  const revoked = [];
+  for (let start = from; start <= to; start += STEP) {
+    const end = Math.min(to, start + STEP - 1);
+    const [i, r] = await Promise.all([
+      c.queryFilter(c.filters.CertificateIssued(), start, end),
+      c.queryFilter(c.filters.CertificateRevoked(), start, end),
+    ]);
+    issued.push(...i);
+    revoked.push(...r);
+  }
   const revokedMap = new Map(revoked.map((e) => [e.args.certHash, e.args.reason]));
   const certs = issued
     .map((e) => ({
