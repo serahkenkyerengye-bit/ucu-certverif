@@ -180,7 +180,7 @@ function ConnectPanel({ connecting, onConnect }) {
       </p>
       <div className="row">
         <button className="btn primary" disabled={connecting} onClick={() => onConnect(false)}>
-          🦊 {connecting ? "Connecting…" : "Connect MetaMask"}
+          🦊 {connecting ? "Approve in the MetaMask window…" : "Connect MetaMask"}
         </button>
         {CHAIN_ID === 31337 && (
           <button className="btn" disabled={connecting} onClick={() => onConnect(true)}>
