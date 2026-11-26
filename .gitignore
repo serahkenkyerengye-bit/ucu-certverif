@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+blockchain/cache/
+blockchain/artifacts/
+blockchain/coverage/
+blockchain/coverage.json
+frontend/.local-ipfs/
